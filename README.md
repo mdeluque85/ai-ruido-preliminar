@@ -15,9 +15,9 @@ The application runs in the browser. Files stay on your device.
 
 ## Limits
 
-- Preliminary result for scoping. It does not replace the full noise model that the 2026 Colombian methodology requires.
+- Preliminary result for scoping. It does not replace the noise model that the 2026 Colombian methodology requires.
 - Flat terrain and warm climates (20 to 32 °C), such as the Llanos Orientales.
-- The band around a block was not tested against a full model.
+- The band around a block was not tested against an acoustic model.
 
 ## License
 
@@ -42,9 +42,9 @@ La aplicación corre en el navegador. Los archivos no salen de su equipo.
 
 ## Límites
 
-- Resultado preliminar para definir el alcance. No reemplaza el modelo completo de ruido que exige la metodología colombiana de 2026.
+- Resultado preliminar para definir el alcance. No reemplaza el modelo de ruido que exige la metodología colombiana de 2026.
 - Terreno plano y clima cálido (20 a 32 °C), como los Llanos Orientales.
-- La franja alrededor de un bloque no se probó contra un modelo completo.
+- La franja alrededor de un bloque no se probó contra un modelo acústico.
 
 ## Licencia
 
