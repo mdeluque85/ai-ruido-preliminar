@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body style="margin:0">
+<title>AI Ruido Preliminar</title>
+<style>
+/* Layout: panel de pasos a la izquierda y plano del bloque a la derecha, como una hoja de trabajo de EIA */
+:root{
+  --bg:#eef2f1;--panel:#ffffff;--ink:#14241f;--muted:#566660;--line:#cfd9d6;
+  --accent:#0d6655;--accent-ink:#ffffff;--ai:#e39a3b;--ai-soft:#f6dcb4;--block:#14241f;--warn:#a34a00;--warn-bg:#fdeedb;--ok:#0d6655;--ok-bg:#dcefe9;
+  --sans:"Source Sans 3","Segoe UI",system-ui,sans-serif;--mono:"JetBrains Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#101a18;--panel:#17231f;--ink:#e6efec;--muted:#9fb2ab;--line:#2d3d38;--accent:#3fbfa5;--accent-ink:#0b1513;--ai:#e8a54d;--ai-soft:#5a4322;--block:#e6efec;--warn:#f0b070;--warn-bg:#3d2b14;--ok:#6fdcc4;--ok-bg:#16352e;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#101a18;--panel:#17231f;--ink:#e6efec;--muted:#9fb2ab;--line:#2d3d38;--accent:#3fbfa5;--accent-ink:#0b1513;--ai:#e8a54d;--ai-soft:#5a4322;--block:#e6efec;--warn:#f0b070;--warn-bg:#3d2b14;--ok:#6fdcc4;--ok-bg:#16352e;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.45}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:16px}
+header{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between}
+h1{font-size:1.65rem;margin:0;line-height:1.15;text-wrap:balance}
+.sub{color:var(--muted);margin:2px 0 0;max-width:68ch}
+.lang{display:flex;gap:4px}
+button{font:inherit;cursor:pointer}
+.lang button{background:none;border:1px solid var(--line);color:var(--muted);padding:2px 10px;border-radius:4px}
+.lang button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.grid{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:grid;gap:12px;min-width:0}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;display:grid;gap:8px;min-width:0}
+.step h2{font-size:1rem;margin:0;display:flex;gap:8px;align-items:center}
+.n{font-family:var(--mono);font-size:.8rem;background:var(--accent);color:var(--accent-ink);width:22px;height:22px;display:inline-grid;place-items:center;border-radius:50%;flex:none}
+.hint{color:var(--muted);font-size:.9rem;margin:0}
+.drop{display:block;border:1.5px dashed var(--line);border-radius:6px;padding:12px;text-align:center;cursor:pointer;color:var(--muted);font-size:.95rem}
+.drop:hover,.drop:focus-within{border-color:var(--accent);color:var(--ink)}
+.drop input{position:absolute;opacity:0;width:1px;height:1px}
+.file{font-family:var(--mono);font-size:.8rem;color:var(--ok);overflow-wrap:anywhere}
+.err{background:var(--warn-bg);color:var(--warn);padding:8px 10px;border-radius:4px;font-size:.92rem}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th{text-align:left;color:var(--muted);font-weight:600;font-size:.8rem;padding:4px 6px;border-bottom:1px solid var(--line)}
+td{padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+td.num{font-family:var(--mono);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.chip{display:inline-block;font-size:.76rem;padding:0 6px;border-radius:3px;background:var(--ok-bg);color:var(--ok)}
+.chip.w{background:var(--warn-bg);color:var(--warn)}
+tr.max td{font-weight:700}
+.sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+@media (max-width:520px){.sum{grid-template-columns:minmax(0,1fr)}}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 12px;min-width:0}
+.kpi b{display:block;font-family:var(--mono);font-size:1.35rem;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.kpi span{color:var(--muted);font-size:.86rem}
+.map{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px;position:relative}
+.map svg{display:block;width:100%;height:auto;max-height:560px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;padding:4px 6px 2px;font-size:.88rem;color:var(--muted)}
+.sw{display:inline-block;width:14px;height:10px;margin-right:6px;vertical-align:-1px;border:1px solid var(--block)}
+.sw.a{background:var(--ai);opacity:.75;border-color:var(--ai)}
+.sw.b{background:var(--panel)}
+.tag{position:absolute;top:14px;left:14px;background:var(--warn-bg);color:var(--warn);font-size:.8rem;padding:1px 8px;border-radius:3px}
+.tools{display:flex;flex-wrap:wrap;gap:8px}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:4px;padding:8px 12px;font-weight:600}
+.btn.alt{background:none;color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.note{color:var(--muted);font-size:.9rem;margin:0;max-width:80ch}
+input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1 data-t="title"></h1>
+      <p class="sub" data-t="sub"></p>
+    </div>
+    <div class="lang" role="group" aria-label="Idioma">
+      <button id="les" type="button" aria-pressed="true">ES</button>
+      <button id="len" type="button" aria-pressed="false">EN</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <section class="step">
+        <h2><span class="n">1</span><span data-t="s1"></span></h2>
+        <p class="hint" data-t="s1h"></p>
+        <label class="drop"><span data-t="pickx"></span><input id="fx" type="file" accept=".xlsx,.xlsm"></label>
+        <div class="file" id="nx"></div>
+        <div class="err" id="ex" hidden></div>
+      </section>
+
+      <section class="step">
+        <h2><span class="n">2</span><span data-t="s2"></span></h2>
+        <p class="hint" data-t="s2h"></p>
+        <label class="drop"><span data-t="picks"></span><input id="fs" type="file" multiple accept=".zip,.shp,.dbf,.prj,.shx,.cpg,.geojson,.json"></label>
+        <div class="file" id="ns"></div>
+        <div class="err" id="es" hidden></div>
+      </section>
+
+      <section class="step">
+        <h2><span class="n">3</span><span data-t="s3"></span></h2>
+        <p class="hint" data-t="s3h"></p>
+        <div class="tablewrap"><table>
+          <thead><tr><th></th><th data-t="c"></th><th style="text-align:right" data-t="r"></th><th data-t="v"></th></tr></thead>
+          <tbody id="tb"></tbody>
+        </table></div>
+      </section>
+    </div>
+
+    <div class="col">
+      <div class="sum">
+        <div class="kpi"><b id="kr">-</b><span data-t="kr"></span></div>
+        <div class="kpi"><b id="ka">-</b><span data-t="ka"></span></div>
+        <div class="kpi"><b id="kb">-</b><span data-t="kb"></span></div>
+      </div>
+      <div class="map">
+        <span class="tag" id="demo" data-t="demo"></span>
+        <svg id="svg" role="img" aria-label="Plano del bloque y del área de influencia preliminar"></svg>
+        <div class="legend"><span><i class="sw a"></i><span data-t="la"></span></span><span><i class="sw b"></i><span data-t="lb"></span></span></div>
+      </div>
+      <div class="tools">
+        <button class="btn" id="dshp" type="button" data-t="dshp"></button>
+        <button class="btn alt" id="dkml" type="button" data-t="dkml"></button>
+        <button class="btn alt" id="dgeo" type="button" data-t="dgeo"></button>
+      </div>
+      <div class="err" id="eo" hidden></div>
+      <p class="note" data-t="foot"></p>
+    </div>
+  </div>
+</div>
+
+<script src="lib/xlsx.full.min.js"></script>
+<script src="lib/jszip.min.js"></script>
+<script src="lib/proj4.js"></script>
+<script src="lib/turf.min.js"></script>
+<script src="lib/shp.min.js"></script>
+<script>
+const T={es:{title:'Área de influencia preliminar por ruido',sub:'Para bloques de hidrocarburos en Colombia. Lleva la mayor distancia de la calculadora al límite del bloque, porque en esta etapa una plataforma puede quedar en cualquier punto del bloque.',
+s1:'Cargue la calculadora',s1h:'El Excel diligenciado y guardado. La app lee la sección 4 de la hoja Calculadora.',pickx:'Elegir archivo .xlsx',
+s2:'Cargue el límite del bloque',s2h:'Un .zip con el shapefile (.shp, .shx, .dbf, .prj), los archivos sueltos o un GeoJSON. Nada sale de su equipo.',picks:'Elegir shapefile o GeoJSON',
+s3:'Revise los criterios',s3h:'Solo cuentan los criterios marcados. Manda la mayor distancia.',c:'Criterio',r:'r*, m',v:'Verificación',
+kr:'Mayor distancia r*',ka:'Área de influencia preliminar',kb:'Área del bloque',demo:'Ejemplo: bloque y datos hipotéticos',la:'Área de influencia preliminar',lb:'Límite del bloque',
+dshp:'Descargar shapefile (CTM12)',dkml:'KML',dgeo:'GeoJSON',
+foot:'Resultado preliminar para definir el alcance del EIA. La metodología de 2026 exige que el área de influencia definitiva de ruido salga de un modelo de emisiones. Aplica a terreno plano y clima cálido. Revise las limitaciones en la guía de la calculadora.',
+noRows:'No encontré la sección 4. Use la calculadora del artículo, sin cambiar sus hojas.',noSheet:'Este archivo no tiene la hoja Calculadora.',empty:'Los criterios no tienen r*. Abra el Excel, revise la columna Verificación, guárdelo y cárguelo de nuevo.',
+badProj:'Las coordenadas no caen en Colombia. Incluya el archivo .prj en el .zip.',badGeom:'No encontré polígonos en el archivo.',assumed:'Sin .prj: asumí MAGNA-SIRGAS Origen Nacional (EPSG:9377).',failRead:'No pude leer el archivo. Revise que esté completo.',none:'Marque al menos un criterio.',saveFail:'La descarga no se completó.',ok:'OK',loading:'Librerías sin cargar. Revise su conexión y recargue la página.'},
+en:{title:'Preliminary noise area of influence',sub:'For hydrocarbon blocks in Colombia. It carries the largest distance of the calculator to the block limit, because at this stage a platform can sit anywhere in the block.',
+s1:'Load the calculator',s1h:'The completed and saved Excel file. The app reads section 4 of the Calculator sheet.',pickx:'Choose .xlsx file',
+s2:'Load the block limit',s2h:'A .zip with the shapefile (.shp, .shx, .dbf, .prj), the loose files, or a GeoJSON. Nothing leaves your device.',picks:'Choose shapefile or GeoJSON',
+s3:'Review the criteria',s3h:'Only ticked criteria count. The largest distance governs.',c:'Criterion',r:'r*, m',v:'Check',
+kr:'Largest distance r*',ka:'Preliminary area of influence',kb:'Block area',demo:'Example: hypothetical block and data',la:'Preliminary area of influence',lb:'Block limit',
+dshp:'Download shapefile (CTM12)',dkml:'KML',dgeo:'GeoJSON',
+foot:'Preliminary result for scoping the EIA. The 2026 methodology requires the final noise area of influence to come from an emission model. It applies to flat terrain and warm climates. See the limitations in the calculator guide.',
+noRows:'Section 4 was not found. Use the calculator of the article without changing its sheets.',noSheet:'This file has no Calculator sheet.',empty:'The criteria have no r*. Open the Excel file, review the Check column, save it and load it again.',
+badProj:'The coordinates do not fall in Colombia. Include the .prj file in the .zip.',badGeom:'No polygons were found in the file.',assumed:'No .prj: assumed MAGNA-SIRGAS Origen Nacional (EPSG:9377).',failRead:'The file could not be read. Check that it is complete.',none:'Tick at least one criterion.',saveFail:'The download did not finish.',ok:'OK',loading:'Libraries did not load. Check your connection and reload the page.'}};
+let lang='es';const t=k=>T[lang][k];
+const $=i=>document.getElementById(i);
+const CTM='+proj=tmerc +lat_0=4 +lon_0=-73 +k=0.9992 +x_0=5000000 +y_0=2000000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs';
+const PRJ='PROJCS["MAGNA-SIRGAS_Origen-Nacional",GEOGCS["GCS_MAGNA",DATUM["D_MAGNA",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",5000000.0],PARAMETER["False_Northing",2000000.0],PARAMETER["Central_Meridian",-73.0],PARAMETER["Scale_Factor",0.9992],PARAMETER["Latitude_Of_Origin",4.0],UNIT["Meter",1.0]]';
+const toCTM=c=>proj4('WGS84',CTM,c),toLL=c=>proj4(CTM,'WGS84',c);
+const S={rows:[],block:null,ai:null,rmax:0,isDemo:true,name:'bloque'};
+const fmt=(x,d=0)=>x.toLocaleString(lang==='es'?'es-CO':'en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+function show(id,msg){const e=$(id);e.textContent=msg||'';e.hidden=!msg}
+
+/* Excel */
+function readBook(buf){
+  const wb=XLSX.read(buf,{type:'array'});
+  const name=wb.SheetNames.find(n=>/^calcul(adora|ator)$/i.test(n));
+  if(!name) throw new Error(t('noSheet'));
+  const a=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:null,raw:true});
+  const h=a.findIndex(r=>r&&r.some(c=>typeof c==='string'&&/^r\*,?\s*m/i.test(c.trim())));
+  if(h<0) throw new Error(t('noRows'));
+  const iR=a[h].findIndex(c=>typeof c==='string'&&/^r\*,?\s*m/i.test(c.trim()));
+  const out=[];
+  for(let i=h+1;i<a.length;i++){
+    const r=a[i];if(!r||r[0]==null||r[0]==='') { if(out.length) continue; else continue; }
+    if(r[iR-1]==null) continue;
+    const rr=typeof r[iR]==='number'?r[iR]:null,chk=String(r[iR+2]??'');
+    out.push({label:String(r[0]),per:r[1],h:r[2],w:r[3],L:r[4],r:rr,chk,on:rr!=null&&/^ok/i.test(chk)});
+  }
+  if(!out.length) throw new Error(t('noRows'));
+  if(!out.some(x=>x.r!=null)) throw new Error(t('empty'));
+  return out;
+}
+
+/* Límite */
+const inCol=b=>b[0]>-82&&b[2]<-66&&b[1]>-5&&b[3]<14;
+function polys(fc){
+  const list=Array.isArray(fc)?fc.flatMap(f=>f.features):fc.features;
+  const ps=list.filter(f=>f&&f.geometry&&/Polygon/.test(f.geometry.type));
+  if(!ps.length) throw new Error(t('badGeom'));
+  let u=ps[0];for(let i=1;i<ps.length;i++) u=turf.union(turf.featureCollection([u,ps[i]]))||u;
+  return u;
+}
+function reprojFeature(f){return turf.coordEach?(()=>{const g=JSON.parse(JSON.stringify(f));turf.coordEach(g,c=>{const p=toLL([c[0],c[1]]);c[0]=p[0];c[1]=p[1]});return g})():f}
+async function readBlock(files){
+  let note='';let fc;const by=e=>files.find(f=>f.name.toLowerCase().endsWith(e));
+  if(by('.geojson')||by('.json')) fc=JSON.parse(await (by('.geojson')||by('.json')).text());
+  else if(by('.zip')) fc=await shp.parseZip(await by('.zip').arrayBuffer());
+  else if(by('.shp')){
+    const prj=by('.prj')?await by('.prj').text():undefined;
+    const g=shp.parseShp(await by('.shp').arrayBuffer(),prj);
+    const d=by('.dbf')?shp.parseDbf(await by('.dbf').arrayBuffer()):[];
+    fc=shp.combine([g,d]);
+  } else throw new Error(t('failRead'));
+  let u=polys(fc);let b=turf.bbox(u);
+  if(!inCol(b)){
+    if(b[0]>3.5e6&&b[2]<6.5e6&&b[1]>1e6&&b[3]<3.5e6){u=reprojFeature(u);b=turf.bbox(u);note=t('assumed')}
+    if(!inCol(b)) throw new Error(t('badProj'));
+  }
+  return {u,note};
+}
+
+/* Cálculo: el buffer y las áreas se hacen en CTM12 (metros), no sobre la esfera */
+const DEG=111195.08;
+function mapCoords(f,fn){const g=JSON.parse(JSON.stringify(f));turf.coordEach(g,c=>{const p=fn([c[0],c[1]]);c[0]=p[0];c[1]=p[1]});return g}
+function bufferCTM(f,rm){
+  const b=turf.bbox(f),[x0,y0]=toCTM([(b[0]+b[2])/2,(b[1]+b[3])/2]);
+  const fake=mapCoords(f,c=>{const p=toCTM(c);return [(p[0]-x0)/DEG,(p[1]-y0)/DEG]});
+  const out=turf.buffer(fake,rm/1000,{units:'kilometers',steps:32});
+  return mapCoords(out,c=>toLL([c[0]*DEG+x0,c[1]*DEG+y0]));
+}
+function areaHa(f){let A=0;rings(f.geometry).forEach(p=>p.forEach((r,i)=>{const s=Math.abs(areaS(r.map(c=>toCTM([c[0],c[1]]))));A+=i?-s:s}));return A/1e4}
+function compute(){
+  const on=S.rows.filter(r=>r.on&&r.r!=null);
+  show('eo',on.length?'':t('none'));
+  S.rmax=on.length?Math.max(...on.map(r=>r.r)):0;
+  S.ai=(S.block&&S.rmax)?bufferCTM(S.block,S.rmax):null;
+  $('kr').textContent=S.rmax?fmt(S.rmax)+' m':'-';
+  $('ka').textContent=S.ai?fmt(areaHa(S.ai),1)+' ha':'-';
+  $('kb').textContent=S.block?fmt(areaHa(S.block),1)+' ha':'-';
+  ['dshp','dkml','dgeo'].forEach(i=>$(i).disabled=!S.ai);
+  table();draw();
+}
+function table(){
+  const b=$('tb');b.textContent='';
+  S.rows.forEach((r,i)=>{
+    const tr=document.createElement('tr');if(r.on&&r.r===S.rmax) tr.className='max';
+    const a=document.createElement('td'),c=document.createElement('input');c.type='checkbox';c.id='c'+i;c.checked=r.on;c.disabled=r.r==null;c.setAttribute('aria-label',r.label);c.onchange=()=>{r.on=c.checked;compute()};a.append(c);
+    const l=document.createElement('td');l.textContent=r.label;
+    const n=document.createElement('td');n.className='num';n.textContent=r.r!=null?fmt(r.r):'-';
+    const v=document.createElement('td'),s=document.createElement('span');s.className='chip'+(/^ok/i.test(r.chk)?'':' w');s.textContent=r.chk||'-';v.append(s);
+    tr.append(a,l,n,v);b.append(tr);
+  });
+}
+/* Plano */
+function draw(){
+  const svg=$('svg');svg.textContent='';if(!S.block) return;
+  const NS='http://www.w3.org/2000/svg',W=760,H=500,pad=26;
+  const base=S.ai||S.block;const b=turf.bbox(base);
+  const [xa,ya]=toCTM([b[0],b[1]]),[xb,yb]=toCTM([b[2],b[3]]);
+  const k=Math.min((W-2*pad)/(xb-xa),(H-2*pad)/(yb-ya));
+  const ox=(W-(xb-xa)*k)/2,oy=(H-(yb-ya)*k)/2;
+  const P=c=>{const p=toCTM([c[0],c[1]]);return [ox+(p[0]-xa)*k,H-oy-(p[1]-ya)*k]};
+  const path=g=>{const rings=g.type==='Polygon'?g.coordinates:g.coordinates.flat();return rings.map(r=>'M'+r.map(c=>P(c).map(v=>v.toFixed(1)).join(' ')).join('L')+'Z').join('')};
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v);
+  if(S.ai){const a=document.createElementNS(NS,'path');a.setAttribute('d',path(S.ai.geometry));a.setAttribute('fill',css('--ai'));a.setAttribute('fill-opacity','.55');a.setAttribute('stroke',css('--ai'));a.setAttribute('stroke-width','1.5');a.setAttribute('fill-rule','evenodd');svg.append(a)}
+  const p=document.createElementNS(NS,'path');p.setAttribute('d',path(S.block.geometry));p.setAttribute('fill',css('--panel'));p.setAttribute('stroke',css('--block'));p.setAttribute('stroke-width','1.5');p.setAttribute('fill-rule','evenodd');svg.append(p);
+  const nice=[100,200,500,1000,2000,5000,10000,20000,50000,100000];const m=nice.find(v=>v*k>=90)||nice[nice.length-1];
+  const add=(n,at,tx)=>{const e=document.createElementNS(NS,n);for(const q in at)e.setAttribute(q,at[q]);if(tx)e.textContent=tx;svg.append(e)};
+  add('line',{x1:pad,y1:H-14,x2:pad+m*k,y2:H-14,stroke:css('--block'),'stroke-width':3});
+  add('text',{x:pad,y:H-20,fill:css('--ink'),'font-size':13,'font-family':'var(--mono)'},m>=1000?(m/1000)+' km':m+' m');
+  add('path',{d:`M${W-26} 34 L${W-20} 52 L${W-26} 47 L${W-32} 52Z`,fill:css('--ink')});
+  add('text',{x:W-26,y:28,fill:css('--ink'),'font-size':13,'text-anchor':'middle','font-weight':700},'N');
+}
+/* Salidas */
+function rings(g){return g.type==='Polygon'?[g.coordinates]:g.coordinates}
+const areaS=r=>{let s=0;for(let i=0;i<r.length-1;i++) s+=r[i][0]*r[i+1][1]-r[i+1][0]*r[i][1];return s/2};
+function writeShp(g,attrs){
+  /* un registro tipo poligono en CTM12; exterior horario, huecos antihorario */
+  const parts=[];rings(g).forEach(poly=>poly.forEach((r,i)=>{let q=r.map(c=>toCTM([c[0],c[1]]));const s=areaS(q);if((i===0&&s>0)||(i>0&&s<0)) q=q.slice().reverse();parts.push(q)}));
+  const np=parts.reduce((a,p)=>a+p.length,0),all=parts.flat();
+  const xs=all.map(c=>c[0]),ys=all.map(c=>c[1]),box=[Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)];
+  const clen=44+4*parts.length+16*np;const total=100+8+clen;
+  const sb=new ArrayBuffer(total),s=new DataView(sb);
+  const head=(v,len)=>{v.setInt32(0,9994,false);v.setInt32(24,len/2,false);v.setInt32(28,1000,true);v.setInt32(32,5,true);box.forEach((x,i)=>v.setFloat64(36+8*i,x,true))};
+  head(s,total);s.setInt32(100,1,false);s.setInt32(104,clen/2,false);
+  let o=108;s.setInt32(o,5,true);o+=4;box.forEach(x=>{s.setFloat64(o,x,true);o+=8});s.setInt32(o,parts.length,true);o+=4;s.setInt32(o,np,true);o+=4;
+  let idx=0;parts.forEach(p=>{s.setInt32(o,idx,true);o+=4;idx+=p.length});
+  all.forEach(c=>{s.setFloat64(o,c[0],true);o+=8;s.setFloat64(o,c[1],true);o+=8});
+  const xb=new ArrayBuffer(108),x=new DataView(xb);head(x,108);x.setInt32(100,50,false);x.setInt32(104,clen/2,false);
+  /* dbf */
+  const F=[['NOMBRE','C',40,0],['RADIO_M','N',10,0],['AREA_HA','N',14,1],['CRITERIOS','C',80,0]];
+  const rec=1+F.reduce((a,f)=>a+f[2],0),hl=32+32*F.length+1,db=new Uint8Array(hl+rec+1);const dv=new DataView(db.buffer);
+  const now=new Date();db[0]=3;db[1]=now.getFullYear()-1900;db[2]=now.getMonth()+1;db[3]=now.getDate();dv.setInt32(4,1,true);dv.setInt16(8,hl,true);dv.setInt16(10,rec,true);
+  const asc=v=>String(v).normalize('NFD').replace(/[^\x20-\x7e]/g,'');
+  F.forEach((f,i)=>{const b=32+32*i;for(let j=0;j<f[0].length;j++) db[b+j]=f[0].charCodeAt(j);db[b+11]=f[1].charCodeAt(0);db[b+16]=f[2];db[b+17]=f[3]});
+  db[hl-1]=13;let w=hl;db[w++]=32;
+  [attrs.NOMBRE,attrs.RADIO_M.toFixed(0),attrs.AREA_HA.toFixed(1),attrs.CRITERIOS].forEach((v,i)=>{const f=F[i];let st=asc(v).slice(0,f[2]);st=f[1]==='N'?st.padStart(f[2],' '):st.padEnd(f[2],' ');for(let j=0;j<f[2];j++) db[w++]=st.charCodeAt(j)});
+  db[w]=26;
+  return {shp:sb,shx:xb,dbf:db.buffer};
+}
+const attrs=()=>({NOMBRE:'AI preliminar ruido '+S.name,RADIO_M:S.rmax,AREA_HA:areaHa(S.ai),CRITERIOS:S.rows.filter(r=>r.on&&r.r===S.rmax).map(r=>r.label).join('; ')});
+async function save(filename,data){
+  show('eo','');
+  const blob=data instanceof Blob?data:new Blob([data],{type:'application/octet-stream'});
+  let d=null;try{d=await window.claude?.use?.('downloads')}catch(e){}
+  try{
+    if(d){await d.save({filename,data:blob});return}
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;document.body.append(a);a.click();a.remove();
+  }catch(e){if(!/declin|cancel|denied/i.test(e&&(e.code||e.message)||'')) show('eo',t('saveFail'))}
+}
+const base=()=>'AI_preliminar_ruido_'+S.name.replace(/[^\w-]+/g,'_');
+$('dshp').onclick=async()=>{const f=writeShp(S.ai.geometry,attrs()),z=new JSZip(),n=base();z.file(n+'.shp',f.shp);z.file(n+'.shx',f.shx);z.file(n+'.dbf',f.dbf);z.file(n+'.prj',PRJ);z.file(n+'.cpg','UTF-8');save(n+'.zip',await z.generateAsync({type:'blob'}))};
+$('dgeo').onclick=()=>{const g={type:'FeatureCollection',features:[{type:'Feature',properties:attrs(),geometry:S.ai.geometry}]};save(base()+'.json',JSON.stringify(g))};
+$('dkml').onclick=async()=>{const A=attrs(),esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const poly=rings(S.ai.geometry).map(p=>'<Polygon>'+p.map((r,i)=>`<${i?'innerBoundaryIs':'outerBoundaryIs'}><LinearRing><coordinates>${r.map(c=>c[0].toFixed(6)+','+c[1].toFixed(6)).join(' ')}</coordinates></LinearRing></${i?'innerBoundaryIs':'outerBoundaryIs'}>`).join('')+'</Polygon>').join('');
+  const z=new JSZip();z.file(base()+'.kml',`<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><Placemark><name>${esc(A.NOMBRE)}</name><description>r* ${A.RADIO_M.toFixed(0)} m; ${A.AREA_HA.toFixed(1)} ha; ${esc(A.CRITERIOS)}</description><Style><PolyStyle><color>7f3b9ae3</color></PolyStyle></Style><MultiGeometry>${poly}</MultiGeometry></Placemark></Document></kml>`);save(base()+'_kml.zip',await z.generateAsync({type:'blob'}))};
+
+/* Entradas */
+$('fx').onchange=async e=>{const f=e.target.files[0];if(!f) return;show('ex','');
+  try{S.rows=readBook(await f.arrayBuffer());$('nx').textContent=f.name;undemo();compute()}catch(x){$('nx').textContent='';show('ex',x.message||t('failRead'))}};
+$('fs').onchange=async e=>{const fl=[...e.target.files];if(!fl.length) return;show('es','');
+  try{const {u,note}=await readBlock(fl);S.block=u;S.name=fl[0].name.replace(/\.[^.]+$/,'');$('ns').textContent=fl.map(f=>f.name).join(', ');show('es',note);undemo();compute()}catch(x){$('ns').textContent='';show('es',x.message&&!/undefined|null/.test(x.message)?x.message:t('failRead'))}};
+function undemo(){S.isDemo=false;$('demo').hidden=true}
+function setLang(l){lang=l;document.documentElement.lang=l;$('les').setAttribute('aria-pressed',l==='es');$('len').setAttribute('aria-pressed',l==='en');document.querySelectorAll('[data-t]').forEach(e=>e.textContent=t(e.dataset.t));if(typeof turf!=='undefined') compute()}
+$('les').onclick=()=>setLang('es');$('len').onclick=()=>setLang('en');
+window.addEventListener('themechange',draw);
+(function init(){
+  document.querySelectorAll('[data-t]').forEach(e=>e.textContent=t(e.dataset.t));
+  if(typeof turf==='undefined'||typeof proj4==='undefined'){show('eo',t('loading'));return}
+  /* Ejemplo marcado: bloque rectangular hipotetico con los criterios del articulo */
+  const c=[[5186000,2218000],[5196000,2218000],[5197500,2224000],[5190000,2226000],[5186000,2223000]];
+  S.block=turf.polygon([[...c,c[0]].map(toLL)]);S.name='ejemplo';
+  S.rows=[['Personas, noche','Noche',4,'A',39,1702.48],['Personas, día','Día',4,'A',49,661.4],['Fauna, 40 dB(A)','Noche',1.5,'A',40,1309.2],['Fauna, 45 dB(A)','Noche',1.5,'A',45,826.9],['Fauna, 52 dB(A)','Noche',1.5,'A',52,435.1],['Fauna, 70 dB(C)','Noche',1.5,'C',70,464.1],['Fauna, 71,4 dB(F)','Noche',1.5,'Z',71.4,425.4]].map(r=>({label:r[0],per:r[1],h:r[2],w:r[3],L:r[4],r:r[5],chk:'OK',on:true}));
+  compute();
+})();
+</script>
+
+</body>
+</html>
