@@ -19,6 +19,10 @@ The application runs in the browser. Files stay on your device.
 - Flat terrain and warm climates (20 to 32 °C), such as the Llanos Orientales.
 - The band around a block was not tested against a full model.
 
+## License
+
+The application code is under the MIT License (`LICENSE`). The spreadsheets are under CC BY 4.0 (`calculator/LICENSE.md`). Third-party libraries keep their own licenses (`THIRD_PARTY_NOTICES.md`).
+
 ---
 
 # Área de influencia preliminar por ruido de bloques de hidrocarburos en Colombia
@@ -41,3 +45,7 @@ La aplicación corre en el navegador. Los archivos no salen de su equipo.
 - Resultado preliminar para definir el alcance. No reemplaza el modelo completo de ruido que exige la metodología colombiana de 2026.
 - Terreno plano y clima cálido (20 a 32 °C), como los Llanos Orientales.
 - La franja alrededor de un bloque no se probó contra un modelo completo.
+
+## Licencia
+
+El código de la aplicación está bajo licencia MIT (`LICENSE`). Las hojas de cálculo están bajo CC BY 4.0 (`calculator/LICENSE.md`). Las librerías de terceros conservan sus propias licencias (`THIRD_PARTY_NOTICES.md`).
