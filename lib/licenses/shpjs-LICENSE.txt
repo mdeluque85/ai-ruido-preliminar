@@ -1,0 +1,4 @@
+shpjs 4.0.4
+License declared in the package: MIT
+Author declared in the package: Calvin Metcalf
+The npm package ships no separate license file.
